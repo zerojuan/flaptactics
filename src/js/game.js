@@ -21,6 +21,12 @@
       this.player.animations.play('walk', 50, true);
       this.player.anchor.setTo(0.5, 0.5);
       this.input.onHold.add(this.onInputDown, this);
+      this.input.onTap.add(function(){
+        console.log('On tap');
+      }, this);
+      this.input.onDown.add(function(){
+        console.log('On down');
+      }, this);
       console.log(this.input);
       this.input.onUp.add(this.onInputUp, this);
     },
@@ -35,6 +41,7 @@
       //
       // angle = Math.atan2(y - cy, x - cx) * (180 / Math.PI);
       // this.player.angle = angle;
+
       //
       // dx = x - cx;
       // dy = y - cy;
@@ -48,7 +55,10 @@
         this.force = 5;
       }
 
+
       this.accel = this.force;
+      var angle = Math.atan2((this.player.y + this.accel) - this.player.y, this.player.x - (this.player.x-10)) * (180/Math.PI);
+      this.player.angle = angle;
 
       this.player.y += this.accel;
     },
