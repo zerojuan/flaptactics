@@ -5,6 +5,7 @@
     this.player = null;
     this.force = 0;
     this.gravity = 0.6;
+    this.accel = 0;
   }
 
   Game.prototype = {
@@ -19,11 +20,13 @@
 
       this.player.animations.play('walk', 50, true);
       this.player.anchor.setTo(0.5, 0.5);
-      this.input.onDown.add(this.onInputDown, this);
+      this.input.onHold.add(this.onInputDown, this);
+      console.log(this.input);
+      this.input.onUp.add(this.onInputUp, this);
     },
 
     update: function () {
-      var x, y, cx, cy, dx, dy, angle, scale;
+      // var x, y, cx, cy, dx, dy, angle, scale;
 
       // x = this.input.position.x;
       // y = this.input.position.y;
@@ -39,20 +42,27 @@
       //
       // this.player.scale.x = scale * 0.6;
       // this.player.scale.y = scale * 0.6;
-      var accel = this.gravity + this.force;
-      this.player.y += accel;
-      
-      if(this.force < 0){
-        this.force += this.gravity;
-      }else{
-        this.force = 0.6;
+
+      this.force += this.gravity;
+      if(this.force >= 5){//terminal velocity
+        this.force = 5;
       }
+
+      this.accel = this.force;
+
+      this.player.y += this.accel;
+    },
+
+    onInputUp: function(){
+      this.force = -10;
+      console.log('end');
     },
 
     onInputDown: function () {
       // this.game.state.start('menu');
       // this.player.y = this.world.centerY;
-      this.force = -5;
+      // this.force = -10;
+      console.log('start');
     }
 
   };
