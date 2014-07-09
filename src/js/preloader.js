@@ -18,6 +18,10 @@
       this.load.image('pipe', 'assets/pipe.png');
       this.load.image('pipeup', 'assets/pipe-down.png');
       this.load.image('pipedown', 'assets/pipe-up.png');
+      this.load.image('land', 'assets/land.png');
+      this.load.image('sky', 'assets/sky.png');
+      this.load.image('scoreboard', 'assets/scoreboard.png');
+      this.load.image('replay', 'assets/replay.png');
       this.load.bitmapFont('minecraftia', 'assets/minecraftia.png', 'assets/minecraftia.xml');
     },
 
