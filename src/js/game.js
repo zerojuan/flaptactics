@@ -137,7 +137,7 @@
     addPointPipe: function(x, y){
       var pipe = this.rectangles.getFirstDead();
       pipe.reset(x, y);
-      console.log(x, pipe)
+      console.log(x, pipe);
       this.setPipeProperty(pipe);
       pipe.height = 150;
       pipe.width = 1;
