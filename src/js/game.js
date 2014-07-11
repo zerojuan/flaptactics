@@ -54,7 +54,9 @@
 
       // points
       this.rectangles = this.game.add.group();
-      this.rectangles.createMultiple(20, 'pipe');
+      var bmd = this.game.add.bitmapData(1,1); // create a new bitmap data object
+      bmd.ctx.beginPath(); // draw to the canvas context
+      this.rectangles.createMultiple(5, bmd);
 
       // player
       this.player = this.game.add.sprite(x, y, 'player');
@@ -187,11 +189,11 @@
     },
 
     scorer: function(obj1, obj2){
-      console.log('score?', this.subtotal, obj1.getBounds(), obj2.getBounds());
       if(Phaser.Rectangle.intersects(obj1.getBounds(), obj2.getBounds())){
         console.log('intersects!!!!!!!!!');
         this.subtotal++;
       }
+      console.log('score?', this.subtotal);
     },
 
     displayScore: function(){
