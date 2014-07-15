@@ -35,13 +35,58 @@
       this.game.physics.arcade.setBoundsToWorld();
 
       // sky
-      this.sky = this.game.add.sprite(0, this.game.height / 3, 'sky');
-      this.sky.width = this.game.width;
-      this.sky.height = this.game.height - 250;
+      this.sky = this.game.add.group();
+      this.sky.createMultiple(3, 'sky', 0, true);
+      this.sky.forEach(function(cloud ){
+        cloud.reset(0, this.game.height / 3);
+        var i = this.sky.getIndex(cloud);
+        if(i > 0){
+          cloud.reset(this.game.width, this.game.height / 3);
+        }
+
+        this.game.physics.arcade.enable(cloud);
+        cloud.height = this.game.height - 250;
+        cloud.width = this.game.width;
+        cloud.body.velocity.x = -100;
+        cloud.checkWorldBounds = true;
+
+        var that = this;
+        cloud.events.onOutOfBounds.add(function(c){
+          var nextIndex = that.sky.getIndex(c) + 1;
+          if(nextIndex >= 3){
+            nextIndex = 0;
+          }
+          var next = that.sky.getAt(nextIndex);
+          c.reset(next.x + next.width, that.game.height / 3);
+          c.body.velocity.x = -100;
+        });
+      }, this);
 
       // land
-      this.land = this.game.add.sprite(0, this.game.height - 100, 'land');
-      this.land.width = this.game.width;
+      this.land = this.game.add.group();
+      this.land.createMultiple(3, 'land', 0, true);
+      this.land.forEach(function(lot){
+        lot.reset(0, this.game.height - 100);
+        if(this.land.getIndex(lot) > 0){
+          lot.reset(this.game.width, this.game.height - 100);
+        }
+
+        this.game.physics.arcade.enable(lot);
+        lot.width = this.game.width;
+        lot.body.velocity.x = -150;
+        lot.checkWorldBounds = true;
+
+        var that = this;
+        lot.events.onOutOfBounds.add(function(l){
+          var nextIndex = that.land.getIndex(l) + 1;
+          if(nextIndex >= 3){
+            nextIndex = 0;
+          }
+          var next = that.land.getAt(nextIndex);
+          l.reset(next.x + next.width, that.game.height - 100);
+          l.body.velocity.x = -150;
+        });
+      }, this);
 
       // pipes
       this.pipes = this.game.add.group();
@@ -97,6 +142,9 @@
       this.rectangles.forEach(function(rect){
         this.game.debug.spriteBounds(rect);
       }, this);
+      // this.sky.forEach(function(cloud){
+      //   this.game.debug.spriteBounds(cloud);
+      // }, this);
     },
 
     onInputUp: function(){
@@ -168,13 +216,17 @@
     },
 
     collisionHandler: function(){
+      if(this.killed){
+        return;
+      }
+
       this.killed = true;
       this.game.time.events.remove(this.timer);
       //kill pipes
-      this.pipes.setAll('body.velocity.x', 0, true);
-      this.pipesUp.setAll('body.velocity.x', 0, true);
-      this.pipesDown.setAll('body.velocity.x', 0, true);
-      this.rectangles.setAll('body.velocity.x', 0, true);
+      // this.pipes.setAll('body.velocity.x', 0, true);
+      // this.pipesUp.setAll('body.velocity.x', 0, true);
+      // this.pipesDown.setAll('body.velocity.x', 0, true);
+      // this.rectangles.setAll('body.velocity.x', 0, true);
 
       this.scoreboard = this.game.add.sprite(this.game.width / 3, this.game.height / 6, 'scoreboard');
 
