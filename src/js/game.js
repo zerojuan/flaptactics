@@ -74,6 +74,7 @@
         this.game.physics.arcade.enable(lot);
         lot.width = this.game.width;
         lot.body.velocity.x = -150;
+        lot.body.immovable = true;
         lot.checkWorldBounds = true;
 
         var that = this;
@@ -129,6 +130,7 @@
     update: function () {
       this.player.body.angularVelocity = this.player.body.velocity.y / 2;
       this.game.physics.arcade.collide(this.pipes, this.player, this.collisionHandler, null, this);
+      this.game.physics.arcade.collide(this.land, this.player, this.collisionHandler, null, this);
       this.game.physics.arcade.overlap(this.rectangles, this.player, this.scorer, null, this);
     },
 
