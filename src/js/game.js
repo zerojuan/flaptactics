@@ -11,6 +11,8 @@
     this.sky = null;
     this.subtotal = 0;
     this.score = null;
+    this.highScore = null;
+    this.newBest = null;
     this.medal = null;
     this.scoreboard = null;
     this.replay = null;
@@ -18,6 +20,7 @@
     this.gravity = 0.6;
     this.accel = 0;
     this.killed = false;
+    localStorage.setItem('highScore', '0');
   }
 
   Game.prototype = {
@@ -25,7 +28,6 @@
     create: function () {
       var x = this.game.width / 2
         , y = this.game.height / 2;
-      console.log('this game:', this.game);
 
       this.subtotal = 0;
       this.game.stage.backgroundColor = '#4EC0CA';
@@ -96,7 +98,6 @@
       this.pipesUp.createMultiple(20, 'pipeup');
       this.pipesDown = this.game.add.group();
       this.pipesDown.createMultiple(20, 'pipedown');
-      console.log('pipes:', this.pipes);
 
       // points
       this.rectangles = this.game.add.group();
@@ -118,9 +119,6 @@
       this.player.animations.play('walk', 50, true);
       this.player.anchor.setTo(0.5, 0.5);
 
-      console.log(this.player);
-      console.log(this.input);
-
       // events
       this.player.events.onOutOfBounds.add(this.collisionHandler, this);
       this.input.onUp.add(this.onInputUp, this);
@@ -141,11 +139,8 @@
 
     render: function(){
       this.game.debug.body(this.player);
-      this.rectangles.forEach(function(rect){
-        this.game.debug.spriteBounds(rect);
-      }, this);
-      // this.sky.forEach(function(cloud){
-      //   this.game.debug.spriteBounds(cloud);
+      // this.rectangles.forEach(function(rect){
+      //   this.game.debug.spriteBounds(rect);
       // }, this);
     },
 
@@ -187,7 +182,6 @@
     addPointPipe: function(x, y){
       var pipe = this.rectangles.getFirstDead();
       pipe.reset(x, y);
-      console.log(x, pipe);
       this.setPipeProperty(pipe);
       pipe.height = 150;
       pipe.width = 1;
@@ -234,6 +228,8 @@
 
       this.score = this.game.add.group();
       this.displayScore();
+      this.highScore = this.game.add.group();
+      this.displayHighScore();
       this.displayMedal();
       this.replay = this.game.add.sprite(this.game.width / 1.9, this.game.height - 200, 'replay');
       this.replay.inputEnabled = true;
@@ -247,7 +243,7 @@
         console.log('intersects!!!!!!!!!');
         this.subtotal++;
       }
-      console.log('score?', this.subtotal);
+      // console.log('score?', this.subtotal);
     },
 
     displayScore: function(){
@@ -260,6 +256,28 @@
         divideX = divideX + 0.05;
         // console.log(divideX, divideY, splits[i]);
         this.score.create(this.game.width / divideX, this.game.height / divideY, splits[i]);
+      }
+    },
+
+    displayHighScore: function(){
+      var best = localStorage.getItem('highScore');
+      // console.log('best:', best);
+
+      if(parseInt(best) < this.subtotal){
+        localStorage.setItem('highScore', this.subtotal.toString());
+        best = this.subtotal.toString();
+        this.newBest = this.add.bitmapText(this.game.width / 1.8, this.game.height / 2.35, 'minecraftia', 'new', 13);
+        this.newBest.tint =  0xff0000;
+      }
+
+      var splits = best.split(''),
+          divideX = 1.50,
+          divideY = 2.1;
+
+      // console.log('after if', best, typeof(best), splits);
+      for(var i = splits.length - 1; i > -1; i--){
+        divideX = divideX + 0.05;
+        this.highScore.create(this.game.width / divideX, this.game.height / divideY, best[i]);
       }
     },
 
