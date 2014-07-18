@@ -2,7 +2,10 @@
   'use strict';
 
   function Game() {
+    this.counter = 0;
     this.player = null;
+    this.jumpBtn = null;
+    this.passBtn = null;
     this.pipes = null;
     this.pipesUp = null;
     this.pipesDown = null;
@@ -20,6 +23,8 @@
     this.gravity = 0.6;
     this.accel = 0;
     this.killed = false;
+    this.isPaused = false;
+    this.storedVelocity = 0;
     localStorage.setItem('highScore', '0');
   }
 
@@ -39,6 +44,161 @@
       // sky
       this.sky = this.game.add.group();
       this.sky.createMultiple(3, 'sky', 0, true);
+      this.moveSky();
+
+      // land
+      this.land = this.game.add.group();
+      this.land.createMultiple(3, 'land', 0, true);
+      this.moveLand();
+
+      // pipes
+      this.pipes = this.game.add.group();
+      this.pipes.createMultiple(20, 'pipe');
+      this.pipesUp = this.game.add.group();
+      this.pipesUp.createMultiple(20, 'pipeup');
+      this.pipesDown = this.game.add.group();
+      this.pipesDown.createMultiple(20, 'pipedown');
+
+      // points
+      this.rectangles = this.game.add.group();
+      var bmd = this.game.add.bitmapData(1,1); // create a new bitmap data object
+      bmd.ctx.beginPath(); // draw to the canvas context
+      this.rectangles.createMultiple(5, bmd);
+
+      // player
+      this.player = this.game.add.sprite(x, y, 'player');
+      this.player.animations.add('walk', [0,1,2], 6, true);
+      this.player.animations.play('walk', 50, true);
+      this.player.anchor.setTo(0.5, 0.5);
+      this.game.physics.arcade.enable(this.player);
+      // this.player.body.gravity.y = 1000;
+      this.player.body.setSize(1, 20, 0, 0);
+      this.player.body.allowRotation = true;
+      this.player.checkWorldBounds = true;
+      this.player.outOfBoundsKill = true;
+
+      this.displayButtons();
+
+      // events
+      this.player.events.onOutOfBounds.add(this.collisionHandler, this);
+      // this.input.onUp.add(this.onInputUp, this);
+      this.timer = this.game.time.create(false);
+      this.timer.loop(1500, this.addRowOfPipes, this);
+      this.timer.start();
+      // this.timer = this.game.time.events.loop(1500, this.addRowOfPipes, this);
+      this.pauseGame();
+    },
+
+    update: function () {
+      if(this.isPaused){
+        return;
+      }
+
+      if(this.counter < 50){
+        this.game.physics.arcade.collide(this.pipes, this.player, this.collisionHandler, null, this);
+        this.game.physics.arcade.collide(this.land, this.player, this.collisionHandler, null, this);
+        this.game.physics.arcade.overlap(this.rectangles, this.player, this.scorer, null, this);
+        this.timer.resume();
+      }else{
+        this.pauseGame();
+        this.isPaused = true;
+        this.counter = 0;
+
+        if(!this.killed){
+          this.reviveButtons();
+        }
+      }
+
+      this.counter++;
+    },
+
+    restart: function(){
+      this.game.state.start('game');
+      this.killed = false;
+    },
+
+    render: function(){
+      this.game.debug.body(this.player);
+      this.rectangles.forEach(function(rect){
+        this.game.debug.spriteBounds(rect);
+      }, this);
+    },
+
+    onInputUp: function(){
+      // Add a vertical velocity to the bird
+      if(!this.killed){
+        console.log(this.killed);
+        this.player.body.velocity.y = -350;
+      }
+    },
+
+    onVelocity: function(obj){
+      obj.body.velocity.x = -200;
+    },
+
+    offVelocity: function(obj){
+      obj.body.velocity.x = 0;
+    },
+
+    pauseGame: function(){
+      this.storedVelocity = this.player.body.velocity.y;
+      this.player.body.gravity.y = 0;
+      this.player.body.velocity.y = 0;
+      this.player.body.angularVelocity = 0;
+      this.player.animations.paused = true;
+
+      this.sky.forEach(function(cloud){
+        cloud.body.velocity.x = 0;
+      });
+      this.land.forEach(function(lot){
+        lot.body.velocity.x = 0;
+      });
+
+      if(!this.killed){
+        this.pipes.forEachAlive(this.offVelocity, this);
+        this.pipesUp.forEachAlive(this.offVelocity, this);
+        this.pipesDown.forEachAlive(this.offVelocity, this);
+        this.rectangles.forEachAlive(this.offVelocity, this);
+      }
+
+      this.timer.pause();
+    },
+
+    unpauseGame: function(){
+      console.log('gravity:', this.player.body.gravity.y, 'velocity', this.player.body.velocity.y, this.player.body.y);
+      this.isPaused = false;
+      this.player.animations.paused = false;
+      // this.player.body.angularVelocity = this.player.body.velocity.y / 2;
+
+      this.sky.forEach(function(cloud){
+        cloud.body.velocity.x = -100;
+      });
+      this.land.forEach(function(lot){
+        lot.body.velocity.x = -150;
+      });
+
+      this.pipes.forEachAlive(this.onVelocity, this);
+      this.pipesUp.forEachAlive(this.onVelocity, this);
+      this.pipesDown.forEachAlive(this.onVelocity, this);
+      this.rectangles.forEachAlive(this.onVelocity, this);
+      this.timer.resume();
+      this.killButtons();
+    },
+
+    jumpAction: function(){
+      console.log('jumpAction??');
+      this.player.body.velocity.y = -350;
+      this.player.body.gravity.y = 700;
+      this.unpauseGame();
+    },
+
+    passAction: function(){
+      console.log('passAction');
+      this.player.body.velocity.y = this.storedVelocity;
+      this.unpauseGame();
+    },
+
+    moveSky: function(){
       this.sky.forEach(function(cloud ){
         cloud.reset(0, this.game.height / 3);
         var i = this.sky.getIndex(cloud);
@@ -63,10 +223,9 @@
           c.body.velocity.x = -100;
         });
       }, this);
+    },
 
-      // land
-      this.land = this.game.add.group();
-      this.land.createMultiple(3, 'land', 0, true);
+    moveLand: function(){
       this.land.forEach(function(lot){
         lot.reset(0, this.game.height - 100);
         if(this.land.getIndex(lot) > 0){
@@ -90,66 +249,16 @@
           l.body.velocity.x = -150;
         });
       }, this);
-
-      // pipes
-      this.pipes = this.game.add.group();
-      this.pipes.createMultiple(20, 'pipe');
-      this.pipesUp = this.game.add.group();
-      this.pipesUp.createMultiple(20, 'pipeup');
-      this.pipesDown = this.game.add.group();
-      this.pipesDown.createMultiple(20, 'pipedown');
-
-      // points
-      this.rectangles = this.game.add.group();
-      var bmd = this.game.add.bitmapData(1,1); // create a new bitmap data object
-      bmd.ctx.beginPath(); // draw to the canvas context
-      this.rectangles.createMultiple(5, bmd);
-
-      // player
-      this.player = this.game.add.sprite(x, y, 'player');
-      this.player.animations.add('walk', [0,1,2], 6, true);
-      this.game.physics.arcade.enable(this.player);
-      this.player.body.gravity.y = 1000;
-      this.player.body.setSize(1, 20, 0, 0);
-      this.player.body.allowRotation = true;
-      this.game.physics.arcade.enable(this.player);
-      this.player.checkWorldBounds = true;
-      this.player.outOfBoundsKill = true;
-
-      this.player.animations.play('walk', 50, true);
-      this.player.anchor.setTo(0.5, 0.5);
-
-      // events
-      this.player.events.onOutOfBounds.add(this.collisionHandler, this);
-      this.input.onUp.add(this.onInputUp, this);
-      this.timer = this.game.time.events.loop(1500, this.addRowOfPipes, this);
     },
 
-    update: function () {
-      this.player.body.angularVelocity = this.player.body.velocity.y / 2;
-      this.game.physics.arcade.collide(this.pipes, this.player, this.collisionHandler, null, this);
-      this.game.physics.arcade.collide(this.land, this.player, this.collisionHandler, null, this);
-      this.game.physics.arcade.overlap(this.rectangles, this.player, this.scorer, null, this);
+    killButtons: function(){
+      this.jumpBtn.kill();
+      this.passBtn.kill();
     },
 
-    restart: function(){
-      this.game.state.start('game');
-      this.killed = false;
-    },
-
-    render: function(){
-      this.game.debug.body(this.player);
-      // this.rectangles.forEach(function(rect){
-      //   this.game.debug.spriteBounds(rect);
-      // }, this);
-    },
-
-    onInputUp: function(){
-      // Add a vertical velocity to the bird
-      if(!this.killed){
-        console.log(this.killed);
-        this.player.body.velocity.y = -350;
-      }
+    reviveButtons: function(){
+      this.jumpBtn.revive();
+      this.passBtn.revive();
     },
 
     setPipeProperty: function(pipe){
@@ -224,6 +333,7 @@
       // this.pipesDown.setAll('body.velocity.x', 0, true);
       // this.rectangles.setAll('body.velocity.x', 0, true);
 
+      this.killButtons();
       this.scoreboard = this.game.add.sprite(this.game.width / 3, this.game.height / 6, 'scoreboard');
 
       this.score = this.game.add.group();
@@ -244,6 +354,31 @@
         this.subtotal++;
       }
       // console.log('score?', this.subtotal);
+    },
+
+    displayButtons: function(){
+      var btnY = this.game.height - 50,
+          btnTextTint = 0x666666,
+          btnTextSize = 18,
+          btnTextX = 10,
+          btnTextY = 5,
+          jump = null,
+          pass = null;
+
+      // jump button
+      this.jumpBtn = this.game.add.button(this.game.width - 200, btnY, 'button', this.jumpAction, this);
+      this.jumpBtn.inputEnabled = true;
+      jump = this.add.bitmapText(btnTextX, btnTextY, 'minecraftia', 'jump', btnTextSize);
+      jump.tint = btnTextTint;
+      this.jumpBtn.addChild(jump);
+      console.log(this.jumpBtn);
+
+      // pass button
+      this.passBtn = this.game.add.button(this.game.width - 100, btnY, 'button', this.passAction, this);
+      this.passBtn.inputEnabled = true;
+      pass = this.add.bitmapText(btnTextX, btnTextY, 'minecraftia', 'pass', btnTextSize);
+      pass.tint = btnTextTint;
+      this.passBtn.addChild(pass);
     },
 
     displayScore: function(){
@@ -267,7 +402,7 @@
         localStorage.setItem('highScore', this.subtotal.toString());
         best = this.subtotal.toString();
         this.newBest = this.add.bitmapText(this.game.width / 1.8, this.game.height / 2.35, 'minecraftia', 'new', 13);
-        this.newBest.tint =  0xff0000;
+        this.newBest.tint =  0xFF0000;
       }
 
       var splits = best.split(''),

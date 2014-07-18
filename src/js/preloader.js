@@ -35,6 +35,7 @@
       this.load.image('gold', 'assets/medal_gold.png');
       this.load.image('scoreboard', 'assets/scoreboard.png');
       this.load.image('replay', 'assets/replay.png');
+      this.load.image('button', 'assets/button.png');
       this.load.bitmapFont('minecraftia', 'assets/minecraftia.png', 'assets/minecraftia.xml');
     },
 
