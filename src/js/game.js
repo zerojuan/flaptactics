@@ -2,30 +2,31 @@
   'use strict';
 
   function Game() {
+    this.accel = 0;
     this.counter = 0;
-    this.player = null;
-    this.loJumpBtn = null;
-    this.midJumpBtn = null;
+    this.force = 0;
+    this.gravity = 0.6;
+    this.highScore = null;
     this.hiJumpBtn = null;
-    this.passBtn = null;
-    this.pipes = null;
-    this.pipesUp = null;
-    this.pipesDown = null;
-    this.rectangles = null;
+    this.isPaused = false;
+    this.killed = false;
     this.land = null;
+    this.loJumpBtn = null
+    this.midJumpBtn = null;;
+    this.medal = null;
+    this.newBest = null;
+    this.player = null;
+    this.passBtn = null;
+    this.pauseLimit = 0;
+    this.pipes = null;
+    this.pipesDown = null;
+    this.pipesUp = null;
+    this.rectangles = null;
+    this.replay = null;
     this.sky = null;
     this.subtotal = 0;
     this.score = null;
-    this.highScore = null;
-    this.newBest = null;
-    this.medal = null;
     this.scoreboard = null;
-    this.replay = null;
-    this.force = 0;
-    this.gravity = 0.6;
-    this.accel = 0;
-    this.killed = false;
-    this.isPaused = false;
     this.storedVelocity = 0;
     localStorage.setItem('highScore', '0');
   }
@@ -96,7 +97,7 @@
         return;
       }
 
-      if(this.counter < 50){
+      if(this.counter < this.pauseLimit){
         this.game.physics.arcade.collide(this.pipes, this.player, this.collisionHandler, null, this);
         this.game.physics.arcade.collide(this.land, this.player, this.collisionHandler, null, this);
         this.game.physics.arcade.overlap(this.rectangles, this.player, this.scorer, null, this);
@@ -109,6 +110,10 @@
         if(!this.killed){
           this.reviveButtons();
         }
+      }
+
+      if(this.player.angle < 20){
+        this.player.angle += 1;
       }
 
       this.counter++;
@@ -190,7 +195,7 @@
       this.player.body.gravity.y = 0;
       this.player.body.velocity.y = 0;
       this.player.body.angularVelocity = 0;
-      this.player.animations.paused = true;
+      // this.player.animations.paused = true;
 
       this.sky.forEach(function(cloud){
         cloud.body.velocity.x = 0;
@@ -213,7 +218,7 @@
       console.log('gravity:', this.player.body.gravity.y, 'velocity', this.player.body.velocity.y, this.player.body.y);
       this.isPaused = false;
       this.player.animations.paused = false;
-      // this.player.body.angularVelocity = this.player.body.velocity.y / 2;
+      this.game.add.tween(this.player).to({angle: -20}, 100).start();
 
       this.sky.forEach(function(cloud){
         cloud.body.velocity.x = -100;
@@ -240,7 +245,6 @@
         console.log('jumpAction??', altitude);
         switch(altitude){
           case 'lo':
-          console.log('Here');
             that.player.body.velocity.y = -150;
             break;
           case 'mid':
@@ -249,9 +253,10 @@
           default:
             that.player.body.velocity.y = -350;
             break;
-        };
+        }
 
         that.player.body.gravity.y = 700;
+        that.pauseLimit = 50;
         that.unpauseGame();
       };
 
@@ -261,6 +266,7 @@
       console.log('passAction');
       this.player.body.velocity.y = this.storedVelocity;
       this.player.body.gravity.y = 700;
+      this.pauseLimit = 10;
       this.unpauseGame();
     },
 
@@ -350,6 +356,7 @@
     },
 
     addOnePipe: function(x, y){
+      console.log('one pipe:', x, y);
       var pipe = this.pipes.getFirstDead();
       pipe.reset(x, y);
       this.setPipeProperty(pipe);
@@ -359,6 +366,7 @@
     },
 
     addPointPipe: function(x, y){
+      console.log('pipe point:', x, y);
       var pipe = this.rectangles.getFirstDead();
       pipe.reset(x, y);
       this.setPipeProperty(pipe);
