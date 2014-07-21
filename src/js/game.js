@@ -4,7 +4,9 @@
   function Game() {
     this.counter = 0;
     this.player = null;
-    this.jumpBtn = null;
+    this.loJumpBtn = null;
+    this.midJumpBtn = null;
+    this.hiJumpBtn = null;
     this.passBtn = null;
     this.pipes = null;
     this.pipesUp = null;
@@ -140,6 +142,49 @@
       obj.body.velocity.x = 0;
     },
 
+    displayButtons: function(){
+      var btnY = this.game.height - 50,
+          btnWidth = 100,
+          btnTextTint = 0x666666,
+          btnTextSize = 12,
+          btnTextX = 10,
+          btnTextY = 10,
+          loJump = null,
+          midJump = null,
+          hiJump = null,
+          pass = null;
+
+      // jump buttons
+      this.loJumpBtn = this.game.add.button(this.game.width - 600, btnY, 'button', this.jumpAction('lo'), this);
+      this.loJumpBtn.inputEnabled = true;
+      this.loJumpBtn.width = btnWidth;
+      loJump = this.add.bitmapText(btnTextX, btnTextY, 'minecraftia', 'lo-jump', btnTextSize);
+      loJump.tint = btnTextTint;
+      this.loJumpBtn.addChild(loJump);
+
+      this.midJumpBtn = this.game.add.button(this.game.width - 450, btnY, 'button', this.jumpAction('mid'), this);
+      this.midJumpBtn.inputEnabled = true;
+      this.midJumpBtn.width = btnWidth;
+      midJump = this.add.bitmapText(btnTextX - 5, btnTextY, 'minecraftia', 'mid-jump', btnTextSize);
+      midJump.tint = btnTextTint;
+      this.midJumpBtn.addChild(midJump);
+
+      this.hiJumpBtn = this.game.add.button(this.game.width - 300, btnY, 'button', this.jumpAction('hi'), this);
+      this.hiJumpBtn.inputEnabled = true;
+      this.hiJumpBtn.width = btnWidth;
+      hiJump = this.add.bitmapText(btnTextX, btnTextY, 'minecraftia', 'hi-jump', btnTextSize);
+      hiJump.tint = btnTextTint;
+      this.hiJumpBtn.addChild(hiJump);
+
+      // pass button
+      this.passBtn = this.game.add.button(this.game.width - 150, btnY, 'button', this.passAction, this);
+      this.passBtn.inputEnabled = true;
+      this.passBtn.width = btnWidth;
+      pass = this.add.bitmapText(btnTextX + 10, btnTextY, 'minecraftia', 'pass', btnTextSize);
+      pass.tint = btnTextTint;
+      this.passBtn.addChild(pass);
+    },
+
     pauseGame: function(){
       this.storedVelocity = this.player.body.velocity.y;
       this.player.body.gravity.y = 0;
@@ -181,20 +226,41 @@
       this.pipesUp.forEachAlive(this.onVelocity, this);
       this.pipesDown.forEachAlive(this.onVelocity, this);
       this.rectangles.forEachAlive(this.onVelocity, this);
-      this.timer.resume();
-      this.killButtons();
+      if(this.timer){
+        this.timer.resume();
+      }
+      if(this.loJumpBtn && this.midJumpBtn && this.hiJumpBtn){
+        this.killButtons();
+      }
     },
 
-    jumpAction: function(){
-      console.log('jumpAction??');
-      this.player.body.velocity.y = -350;
-      this.player.body.gravity.y = 700;
-      this.unpauseGame();
+    jumpAction: function(altitude){
+      var that = this;
+      return function(){
+        console.log('jumpAction??', altitude);
+        switch(altitude){
+          case 'lo':
+          console.log('Here');
+            that.player.body.velocity.y = -150;
+            break;
+          case 'mid':
+            that.player.body.velocity.y = -250;
+            break;
+          default:
+            that.player.body.velocity.y = -350;
+            break;
+        };
+
+        that.player.body.gravity.y = 700;
+        that.unpauseGame();
+      };
+
     },
 
     passAction: function(){
       console.log('passAction');
       this.player.body.velocity.y = this.storedVelocity;
+      this.player.body.gravity.y = 700;
       this.unpauseGame();
     },
 
@@ -252,12 +318,16 @@
     },
 
     killButtons: function(){
-      this.jumpBtn.kill();
+      this.loJumpBtn.kill();
+      this.midJumpBtn.kill();
+      this.hiJumpBtn.kill();
       this.passBtn.kill();
     },
 
     reviveButtons: function(){
-      this.jumpBtn.revive();
+      this.loJumpBtn.revive();
+      this.midJumpBtn.revive();
+      this.hiJumpBtn.revive();
       this.passBtn.revive();
     },
 
@@ -354,31 +424,6 @@
         this.subtotal++;
       }
       // console.log('score?', this.subtotal);
-    },
-
-    displayButtons: function(){
-      var btnY = this.game.height - 50,
-          btnTextTint = 0x666666,
-          btnTextSize = 18,
-          btnTextX = 10,
-          btnTextY = 5,
-          jump = null,
-          pass = null;
-
-      // jump button
-      this.jumpBtn = this.game.add.button(this.game.width - 200, btnY, 'button', this.jumpAction, this);
-      this.jumpBtn.inputEnabled = true;
-      jump = this.add.bitmapText(btnTextX, btnTextY, 'minecraftia', 'jump', btnTextSize);
-      jump.tint = btnTextTint;
-      this.jumpBtn.addChild(jump);
-      console.log(this.jumpBtn);
-
-      // pass button
-      this.passBtn = this.game.add.button(this.game.width - 100, btnY, 'button', this.passAction, this);
-      this.passBtn.inputEnabled = true;
-      pass = this.add.bitmapText(btnTextX, btnTextY, 'minecraftia', 'pass', btnTextSize);
-      pass.tint = btnTextTint;
-      this.passBtn.addChild(pass);
     },
 
     displayScore: function(){
