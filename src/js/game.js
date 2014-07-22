@@ -11,8 +11,8 @@
     this.isPaused = false;
     this.killed = false;
     this.land = null;
-    this.loJumpBtn = null
-    this.midJumpBtn = null;;
+    this.loJumpBtn = null;
+    this.midJumpBtn = null;
     this.medal = null;
     this.newBest = null;
     this.player = null;
@@ -28,6 +28,7 @@
     this.score = null;
     this.scoreboard = null;
     this.storedVelocity = 0;
+    this.wing = null;
     localStorage.setItem('highScore', '0');
   }
 
@@ -71,6 +72,7 @@
       // player
       this.player = this.game.add.sprite(x, y, 'player');
       this.player.animations.add('walk', [0,1,2], 6, true);
+      this.player.animations.add('idle', [0,1,2], 3, true);
       this.player.animations.play('walk', 50, true);
       this.player.anchor.setTo(0.5, 0.5);
       this.game.physics.arcade.enable(this.player);
@@ -116,6 +118,8 @@
         this.player.angle += 1;
       }
 
+      console.log('gravity:::', this.player.body.gravity.y);
+
       this.counter++;
     },
 
@@ -125,19 +129,19 @@
     },
 
     render: function(){
-      this.game.debug.body(this.player);
-      this.rectangles.forEach(function(rect){
-        this.game.debug.spriteBounds(rect);
-      }, this);
+      // this.game.debug.body(this.player);
+      // this.rectangles.forEach(function(rect){
+      //   this.game.debug.spriteBounds(rect);
+      // }, this);
     },
 
-    onInputUp: function(){
-      // Add a vertical velocity to the bird
-      if(!this.killed){
-        console.log(this.killed);
-        this.player.body.velocity.y = -350;
-      }
-    },
+    // onInputUp: function(){
+    //   // Add a vertical velocity to the bird
+    //   if(!this.killed){
+    //     console.log(this.killed);
+    //     this.player.body.velocity.y = -350;
+    //   }
+    // },
 
     onVelocity: function(obj){
       obj.body.velocity.x = -200;
@@ -192,6 +196,7 @@
 
     pauseGame: function(){
       this.storedVelocity = this.player.body.velocity.y;
+      this.player.animations.play('idle');
       this.player.body.gravity.y = 0;
       this.player.body.velocity.y = 0;
       this.player.body.angularVelocity = 0;
@@ -211,12 +216,18 @@
         this.rectangles.forEachAlive(this.offVelocity, this);
       }
 
+      if(this.wing){
+        this.wing.stop();
+      }
+
       this.timer.pause();
     },
 
     unpauseGame: function(){
-      console.log('gravity:', this.player.body.gravity.y, 'velocity', this.player.body.velocity.y, this.player.body.y);
+      // console.log('gravity:', this.player.body.gravity.y, 'velocity', this.player.body.velocity.y, this.player.body.y);
+      this.wing = this.game.sound.play('wing', 1, true);
       this.isPaused = false;
+      this.player.animations.play('walk', 50, true);
       this.player.animations.paused = false;
       this.game.add.tween(this.player).to({angle: -20}, 100).start();
 
@@ -242,10 +253,12 @@
     jumpAction: function(altitude){
       var that = this;
       return function(){
-        console.log('jumpAction??', altitude);
+        that.pauseLimit = 50;
+        // console.log('jumpAction??', altitude);
         switch(altitude){
           case 'lo':
             that.player.body.velocity.y = -150;
+            that.pauseLimit = 40;
             break;
           case 'mid':
             that.player.body.velocity.y = -250;
@@ -256,7 +269,6 @@
         }
 
         that.player.body.gravity.y = 700;
-        that.pauseLimit = 50;
         that.unpauseGame();
       };
 
@@ -356,7 +368,6 @@
     },
 
     addOnePipe: function(x, y){
-      console.log('one pipe:', x, y);
       var pipe = this.pipes.getFirstDead();
       pipe.reset(x, y);
       this.setPipeProperty(pipe);
@@ -366,7 +377,6 @@
     },
 
     addPointPipe: function(x, y){
-      console.log('pipe point:', x, y);
       var pipe = this.rectangles.getFirstDead();
       pipe.reset(x, y);
       this.setPipeProperty(pipe);
@@ -404,7 +414,11 @@
       }
 
       this.killed = true;
+      this.player.body.velocity.x = -210;
+      this.player.body.gravity.y = 700;
+      this.game.sound.play('hit');
       this.game.time.events.remove(this.timer);
+
       //kill pipes
       // this.pipes.setAll('body.velocity.x', 0, true);
       // this.pipesUp.setAll('body.velocity.x', 0, true);
@@ -429,7 +443,10 @@
     scorer: function(obj1, obj2){
       if(Phaser.Rectangle.intersects(obj1.getBounds(), obj2.getBounds())){
         console.log('intersects!!!!!!!!!');
-        this.subtotal++;
+        if(!this.killed){
+          this.game.sound.play('point');
+          this.subtotal++;
+        }
       }
       // console.log('score?', this.subtotal);
     },
@@ -445,13 +462,15 @@
         // console.log(divideX, divideY, splits[i]);
         this.score.create(this.game.width / divideX, this.game.height / divideY, splits[i]);
       }
+
+      this.game.sound.play('die');
     },
 
     displayHighScore: function(){
       var best = localStorage.getItem('highScore');
       // console.log('best:', best);
 
-      if(parseInt(best) < this.subtotal){
+      if(parseInt(best) <= this.subtotal){
         localStorage.setItem('highScore', this.subtotal.toString());
         best = this.subtotal.toString();
         this.newBest = this.add.bitmapText(this.game.width / 1.8, this.game.height / 2.35, 'minecraftia', 'new', 13);
