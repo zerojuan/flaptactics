@@ -29,7 +29,6 @@
     this.scoreboard = null;
     this.storedVelocity = 0;
     this.wing = null;
-    localStorage.setItem('highScore', '0');
   }
 
   Game.prototype = {
@@ -467,10 +466,9 @@
     },
 
     displayHighScore: function(){
-      var best = localStorage.getItem('highScore');
-      // console.log('best:', best);
+      var best = (!localStorage.getItem('highScore')) ? '0':localStorage.getItem('highScore');
 
-      if(parseInt(best) <= this.subtotal){
+      if(parseInt(best) < this.subtotal){
         localStorage.setItem('highScore', this.subtotal.toString());
         best = this.subtotal.toString();
         this.newBest = this.add.bitmapText(this.game.width / 1.8, this.game.height / 2.35, 'minecraftia', 'new', 13);
