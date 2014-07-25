@@ -11,6 +11,8 @@
     this.sky = null;
     this.subtotal = 0;
     this.score = null;
+    this.highScore = null;
+    this.newBest = null;
     this.medal = null;
     this.scoreboard = null;
     this.replay = null;
@@ -18,6 +20,7 @@
     this.gravity = 0.6;
     this.accel = 0;
     this.killed = false;
+    localStorage.setItem('highScore', '0');
   }
 
   Game.prototype = {
@@ -25,7 +28,6 @@
     create: function () {
       var x = this.game.width / 2
         , y = this.game.height / 2;
-      console.log('this game:', this.game);
 
       this.subtotal = 0;
       this.game.stage.backgroundColor = '#4EC0CA';
@@ -35,13 +37,59 @@
       this.game.physics.arcade.setBoundsToWorld();
 
       // sky
-      this.sky = this.game.add.sprite(0, this.game.height / 3, 'sky');
-      this.sky.width = this.game.width;
-      this.sky.height = this.game.height - 250;
+      this.sky = this.game.add.group();
+      this.sky.createMultiple(3, 'sky', 0, true);
+      this.sky.forEach(function(cloud ){
+        cloud.reset(0, this.game.height / 3);
+        var i = this.sky.getIndex(cloud);
+        if(i > 0){
+          cloud.reset(this.game.width, this.game.height / 3);
+        }
+
+        this.game.physics.arcade.enable(cloud);
+        cloud.height = this.game.height - 250;
+        cloud.width = this.game.width;
+        cloud.body.velocity.x = -100;
+        cloud.checkWorldBounds = true;
+
+        var that = this;
+        cloud.events.onOutOfBounds.add(function(c){
+          var nextIndex = that.sky.getIndex(c) + 1;
+          if(nextIndex >= 3){
+            nextIndex = 0;
+          }
+          var next = that.sky.getAt(nextIndex);
+          c.reset(next.x + next.width, that.game.height / 3);
+          c.body.velocity.x = -100;
+        });
+      }, this);
 
       // land
-      this.land = this.game.add.sprite(0, this.game.height - 100, 'land');
-      this.land.width = this.game.width;
+      this.land = this.game.add.group();
+      this.land.createMultiple(3, 'land', 0, true);
+      this.land.forEach(function(lot){
+        lot.reset(0, this.game.height - 100);
+        if(this.land.getIndex(lot) > 0){
+          lot.reset(this.game.width, this.game.height - 100);
+        }
+
+        this.game.physics.arcade.enable(lot);
+        lot.width = this.game.width;
+        lot.body.velocity.x = -150;
+        lot.body.immovable = true;
+        lot.checkWorldBounds = true;
+
+        var that = this;
+        lot.events.onOutOfBounds.add(function(l){
+          var nextIndex = that.land.getIndex(l) + 1;
+          if(nextIndex >= 3){
+            nextIndex = 0;
+          }
+          var next = that.land.getAt(nextIndex);
+          l.reset(next.x + next.width, that.game.height - 100);
+          l.body.velocity.x = -150;
+        });
+      }, this);
 
       // pipes
       this.pipes = this.game.add.group();
@@ -50,7 +98,6 @@
       this.pipesUp.createMultiple(20, 'pipeup');
       this.pipesDown = this.game.add.group();
       this.pipesDown.createMultiple(20, 'pipedown');
-      console.log('pipes:', this.pipes);
 
       // points
       this.rectangles = this.game.add.group();
@@ -72,9 +119,6 @@
       this.player.animations.play('walk', 50, true);
       this.player.anchor.setTo(0.5, 0.5);
 
-      console.log(this.player);
-      console.log(this.input);
-
       // events
       this.player.events.onOutOfBounds.add(this.collisionHandler, this);
       this.input.onUp.add(this.onInputUp, this);
@@ -84,6 +128,7 @@
     update: function () {
       this.player.body.angularVelocity = this.player.body.velocity.y / 2;
       this.game.physics.arcade.collide(this.pipes, this.player, this.collisionHandler, null, this);
+      this.game.physics.arcade.collide(this.land, this.player, this.collisionHandler, null, this);
       this.game.physics.arcade.overlap(this.rectangles, this.player, this.scorer, null, this);
     },
 
@@ -94,9 +139,9 @@
 
     render: function(){
       this.game.debug.body(this.player);
-      this.rectangles.forEach(function(rect){
-        this.game.debug.spriteBounds(rect);
-      }, this);
+      // this.rectangles.forEach(function(rect){
+      //   this.game.debug.spriteBounds(rect);
+      // }, this);
     },
 
     onInputUp: function(){
@@ -137,7 +182,6 @@
     addPointPipe: function(x, y){
       var pipe = this.rectangles.getFirstDead();
       pipe.reset(x, y);
-      console.log(x, pipe);
       this.setPipeProperty(pipe);
       pipe.height = 150;
       pipe.width = 1;
@@ -145,7 +189,7 @@
     },
 
     addRowOfPipes: function(){
-      var hole = Math.floor(Math.random()*5)+1;
+      var hole = Math.floor(Math.random()*4)+1;
 
       for (var i = 0; i < 8; i++){
         var x = this.game.width - 60,
@@ -168,18 +212,24 @@
     },
 
     collisionHandler: function(){
+      if(this.killed){
+        return;
+      }
+
       this.killed = true;
       this.game.time.events.remove(this.timer);
       //kill pipes
-      this.pipes.setAll('body.velocity.x', 0, true);
-      this.pipesUp.setAll('body.velocity.x', 0, true);
-      this.pipesDown.setAll('body.velocity.x', 0, true);
-      this.rectangles.setAll('body.velocity.x', 0, true);
+      // this.pipes.setAll('body.velocity.x', 0, true);
+      // this.pipesUp.setAll('body.velocity.x', 0, true);
+      // this.pipesDown.setAll('body.velocity.x', 0, true);
+      // this.rectangles.setAll('body.velocity.x', 0, true);
 
       this.scoreboard = this.game.add.sprite(this.game.width / 3, this.game.height / 6, 'scoreboard');
 
       this.score = this.game.add.group();
       this.displayScore();
+      this.highScore = this.game.add.group();
+      this.displayHighScore();
       this.displayMedal();
       this.replay = this.game.add.sprite(this.game.width / 1.9, this.game.height - 200, 'replay');
       this.replay.inputEnabled = true;
@@ -193,7 +243,7 @@
         console.log('intersects!!!!!!!!!');
         this.subtotal++;
       }
-      console.log('score?', this.subtotal);
+      // console.log('score?', this.subtotal);
     },
 
     displayScore: function(){
@@ -206,6 +256,28 @@
         divideX = divideX + 0.05;
         // console.log(divideX, divideY, splits[i]);
         this.score.create(this.game.width / divideX, this.game.height / divideY, splits[i]);
+      }
+    },
+
+    displayHighScore: function(){
+      var best = localStorage.getItem('highScore');
+      // console.log('best:', best);
+
+      if(parseInt(best) < this.subtotal){
+        localStorage.setItem('highScore', this.subtotal.toString());
+        best = this.subtotal.toString();
+        this.newBest = this.add.bitmapText(this.game.width / 1.8, this.game.height / 2.35, 'minecraftia', 'new', 13);
+        this.newBest.tint =  0xff0000;
+      }
+
+      var splits = best.split(''),
+          divideX = 1.50,
+          divideY = 2.1;
+
+      // console.log('after if', best, typeof(best), splits);
+      for(var i = splits.length - 1; i > -1; i--){
+        divideX = divideX + 0.05;
+        this.highScore.create(this.game.width / divideX, this.game.height / divideY, best[i]);
       }
     },
 
