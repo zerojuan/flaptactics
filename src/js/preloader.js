@@ -35,7 +35,13 @@
       this.load.image('gold', 'assets/medal_gold.png');
       this.load.image('scoreboard', 'assets/scoreboard.png');
       this.load.image('replay', 'assets/replay.png');
+      this.load.image('button', 'assets/button.png');
       this.load.bitmapFont('minecraftia', 'assets/minecraftia.png', 'assets/minecraftia.xml');
+      this.load.audio('die', 'assets/audio/sfx_die.ogg');
+      this.load.audio('point', 'assets/audio/sfx_point.ogg');
+      this.load.audio('hit', 'assets/audio/sfx_hit.ogg');
+      this.load.audio('swooshing', 'assets/audio/sfx_swooshing.ogg');
+      this.load.audio('wing', 'assets/audio/sfx_wing.ogg');
     },
 
     create: function () {
